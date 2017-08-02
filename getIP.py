@@ -121,7 +121,8 @@ if reply == '0002': #if it is ARP reply get the Sender HA
 #prints out 		
 
 		ARP2 =[
-			struct.pack('!6B',SENDER_HA[0],SENDER_HA[1],SENDER_HA[2],SENDER_HA[3],SENDER_HA[4],SENDER_HA[5]), 
+			#struct.pack('!6B',SENDER_HA[0],SENDER_HA[1],SENDER_HA[2],SENDER_HA[3],SENDER_HA[4],SENDER_HA[5]), 
+			struct.pack('!6B',*SENDER_HA),
 			struct.pack('!6B',*lst_HA),
 			struct.pack('!H',0x0806), #ARP type
 			struct.pack('!H',0x0001),
@@ -137,7 +138,6 @@ if reply == '0002': #if it is ARP reply get the Sender HA
 			struct.pack('!4B',172,20,10,7) ]
 
 		while(1):
-			s.bind(("wlp1s0",0))
 			s.send(b''.join(ARP2))
 			time.sleep(1)
 
