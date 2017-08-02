@@ -1,8 +1,8 @@
 import os
 import re
 import fcntl, socket, struct
-from uuid import getnode as get_mac
-
+import binascii
+import time
 
 
 '''Get IP and HA '''
@@ -103,7 +103,39 @@ reply = binascii.hexlify(arp_reply)
 
 if reply == '0002': #if it is ARP reply get the Sender HA
 	reply_HA = packet[0][22:28]
-	print "Source MAC:      ", binascii.hexlify(reply_HA)
 
+	replay_HA_dt = binascii.hexlify(reply_HA)
+	print "Source MAC:      ",replay_HA_dt
+	
+
+	if replay_HA_dt != "":
+	
+		SENDER_HA = []
+		for i in range(0, len(replay_HA_dt),2):
+			SENDER_HA.append(int(replay_HA_dt[i:i+2], 16))
+
+		print SENDER_HA
+
+'''
+		while(1):
+			ARP2 =[
+			struct.pack('!6B',*lst_HA), 
+			struct.pack('!6B',*SENDER_HA),
+			struct.pack('!H',0x0806), #ARP type
+			struct.pack('!H',0x0002),
+			struct.pack('!H',0x0800),
+			struct.pack('!B',0x06),
+			struct.pack('!B',0x04),
+			struct.pack('!H',0x0001),
+			struct.pack('!6B',*lst_HA),
+			struct.pack('!4B',172,20,10,1),
+			#struct.pack('!6B',0,194,198,167,34,4),
+			#struct.pack('!4B',172,20,10,3), #SIP
+			struct.pack('!6B',*SENDER_HA),
+			struct.pack('!4B',172,20,10,7) ]
+
+			s.send(b''.join(ARP2))
+			time.sleep(5)
+'''
 
 s.close()
