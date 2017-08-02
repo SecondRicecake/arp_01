@@ -91,9 +91,19 @@ Target IP: c0 a8 01 e0 //4byte
 Get Sender's Mac
 '''
 
-s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x0003)) #htons: Convert 16-bit positive integers from host to network byte order
-s.bind(("wlp1s0",0))
-s.send(b''.join(ARP)) #send data to socket
+s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x0003)) #htons: gets all packets
+s.bind(("wlp1s0",0))#(device,0)
+s.send(b''.join(ARP)) #join ARP list elms and send data to socket
+
+packet = s.recvfrom(2048)
+arp_reply = packet[0][20:22]
+reply = binascii.hexlify(arp_reply)
+
+#print type(reply)
+
+if reply == '0002': #if it is ARP reply get the Sender HA
+	reply_HA = packet[0][22:28]
+	print "Source MAC:      ", binascii.hexlify(reply_HA)
+
 
 s.close()
-
